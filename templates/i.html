@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>ChatBot</title>
+<style>
+    body {
+        background-color: powderblue;
+        font-family: Arial, sans-serif;
+    }
+
+    h1 {
+        color: #FF0000;
+        text-align: center;
+    }
+
+    h3 {
+        text-align: center;
+    }
+
+    form {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin-top: 20px;
+    }
+
+    input[type="text"] {
+        border: 2px solid #008cba;
+        border-radius: 4px;
+        padding: 8px;
+        margin-bottom: 10px;
+    }
+
+    input[type="file"] {
+        border: 2px solid #008cba;
+        border-radius: 4px;
+        padding: 8px;
+        margin-bottom: 10px;
+    }
+
+    input[type="file"]:hover {
+        background-color: #f0f0f0;
+    }
+
+    input[type="submit"] {
+        background-color: #4caf50;
+        border: none;
+        color: white;
+        padding: 10px 20px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 14px;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+    }
+
+    input[type="submit"]:hover {
+        background-color: #45a049;
+    }
+
+    img {
+        display: block;
+        margin-top: 20px;
+        max-width: 100%;
+        height: auto;
+    }
+
+    p {
+        text-align: center;
+    }
+</style>
+</head>
+<body style="background-color:powderblue">
+
+<center><h1><span style="color:#FF0000">ChatBot </span></h1>
+    <center><h3>Please Upload the Pdf</h3></center> <br>
+
+    <form method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        <input type="text" name="query" placeholder="Enter your query" />
+
+        <input type="file" name="upload" accept=".pdf" />
+
+        <input type="submit" value="Submit" />
+        
+    </form>
+
+    
+
+    {% if response %}
+
+    <center><h2 style="color:#FF6600"> {{response}} </h2>
+    
+    </center>
+
+    {% endif %}
+
+</center>
+</center>
+</body>
+</html>
