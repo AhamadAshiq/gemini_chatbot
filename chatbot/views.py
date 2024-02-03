@@ -9,6 +9,7 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.chains.question_answering import load_qa_chain
 from langchain.prompts import PromptTemplate
 from dotenv import load_dotenv
+#database
 import io
 from django.db import connections
 import psycopg2
@@ -16,6 +17,8 @@ import faiss
 import pickle
 from io import BytesIO
 import tempfile
+from langchain.vectorstores.pgvector import PGVector
+
 
 # Create your views here.
 # def index(request):
@@ -38,45 +41,23 @@ def get_pdf_text(pdf_docs):
 
 
 def get_text_chunks(text):
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=10000, chunk_overlap=1000)
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
     chunks = text_splitter.split_text(text)
     return chunks
 
 
-def get_vector_store(text_chunks):
-    embeddings = GoogleGenerativeAIEmbeddings(model = "models/embedding-001")
-    vector_store = FAISS.from_texts(text_chunks, embedding=embeddings)
-    vector_store.save_local("faiss_index")
+# def get_vector_store(text_chunks):
+    # embeddings = GoogleGenerativeAIEmbeddings(model = "models/embedding-001")
+    # vector_store = FAISS.from_texts(text_chunks, embedding=embeddings)
+    # vector_store.save_local("faiss_index")
 
-    connection = connections['default']
-    cursor = connection.cursor()
-
-    # Get the default Django database connection
-    connection = connections['default']
-    cursor = connection.cursor()
-
-    # Create the table if it doesn't exist
-    cursor.execute("CREATE TABLE IF NOT EXISTS faiss_index (id serial PRIMARY KEY, index_type varchar, index_data bytea);")
-
-    # Save the Faiss index to a temporary file
-    with tempfile.NamedTemporaryFile() as temp_file:
-        # Use faiss.write_index with the file path
-        faiss.write_index(vector_store.index, temp_file.name)
-
-        # Read the serialized index from the temporary file
-        temp_file.seek(0)
-        serialized_index = temp_file.read()
-
-    # Insert the serialized index into the PostgreSQL table
-    cursor.execute("INSERT INTO faiss_index (index_type, index_data) VALUES (%s, %s);", ("faiss", serialized_index))
-
-    connection.commit()
-
-    # Close the database connection
-    cursor.close()
-
-    return vector_store
+    # # Get the default Django database connection
+    # CONNECTION_STRING = connections['default']
+    # CONNECTION_NAME = 'state_of_union_vectors'
     
+    # chunks = index()
+    # db = PGVector.from_documents(embedding=embeddings, documents=chunks, collection_name=CONNECTION_NAME, connection_string = CONNECTION_STRING)
+
 
 def get_conversational_chain():
 
@@ -120,20 +101,50 @@ def index(request):
     if request.method == "POST" and request.FILES['upload']:
         if 'upload' not in request.FILES:
             err = 'No Images Selected'
-            return render(request, 'i.html',{'err': err})
+            return render(request, 'i.html', {'err': err})
         f = request.FILES['upload']
         
         if f == '':
             err = 'No Files Selected'
             return render(request, 'i.html', {'err': err})
+        
         user_question = request.POST.get('query')
     
         raw_text = get_pdf_text(f)
         text_chunks = get_text_chunks(raw_text)
-        get_vector_store(text_chunks)
+        
+        #chunks with page_content
+        # chunks = [{"page_content": chunk} for chunk in  text_chunks] 
+        
+        # Create Faiss index and save it
+        embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
+        vector_store = FAISS.from_texts(text_chunks, embedding=embeddings)
+        vector_store.save_local("faiss_index")
+
+        # connection_string = connections['default'].settings_dict['ENGINE']
+        DATABASES = connections['default'].settings_dict
+        connection_string=f"postgresql://{DATABASES['USER']}:{DATABASES['PASSWORD']}@{DATABASES['HOST']}:{DATABASES['PORT']}/{DATABASES['NAME']}"
+        
+        text_embeddings = embeddings.embed_documents(text_chunks)
+        text_embedding_pairs = list(zip(text_chunks, text_embeddings))
+        db = PGVector.from_embeddings(text_embedding_pairs, embeddings,connection_string = connection_string)
+        
+        
+        # Get the default Django database connection
+        # CONNECTION_STRING = connections['default']
+    #     CONNECTION_NAME = 'state_of_union_vectors'
+        
+    #     # Create PGVector from the provided documents
+    #     db = PGVector.from_documents(
+    #     embedding=embeddings,
+    #     documents=text_chunks,  
+    #     collection_name=CONNECTION_NAME,
+    #     connection_string=CONNECTION_STRING
+    # )
+        
         response = user_input(user_question)  
         
-
+        
         return render(request, 'i.html', {'response': response})
     else:
         return render(request, 'i.html')
