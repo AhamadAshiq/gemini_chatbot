@@ -41,7 +41,7 @@ def get_pdf_text(pdf_docs):
 
 
 def get_text_chunks(text):
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=10000, chunk_overlap=1000)
     chunks = text_splitter.split_text(text)
     return chunks
 
@@ -101,12 +101,12 @@ def index(request):
     if request.method == "POST" and request.FILES['upload']:
         if 'upload' not in request.FILES:
             err = 'No Images Selected'
-            return render(request, 'i.html', {'err': err})
+            return render(request, 'index.html', {'err': err})
         f = request.FILES['upload']
         
         if f == '':
             err = 'No Files Selected'
-            return render(request, 'i.html', {'err': err})
+            return render(request, 'index.html', {'err': err})
         
         user_question = request.POST.get('query')
     
@@ -145,7 +145,7 @@ def index(request):
         response = user_input(user_question)  
         
         
-        return render(request, 'i.html', {'response': response})
+        return render(request, 'index.html', {'response': response,'query': user_question })
     else:
-        return render(request, 'i.html')
+        return render(request, 'index.html')
 
