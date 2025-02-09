@@ -122,12 +122,12 @@ def index(request):
         vector_store.save_local("faiss_index")
 
         # connection_string = connections['default'].settings_dict['ENGINE']
-        DATABASES = connections['default'].settings_dict
-        connection_string=f"postgresql://{DATABASES['USER']}:{DATABASES['PASSWORD']}@{DATABASES['HOST']}:{DATABASES['PORT']}/{DATABASES['NAME']}"
+        # DATABASES = connections['default'].settings_dict
+        # connection_string=f"postgresql://{DATABASES['USER']}:{DATABASES['PASSWORD']}@{DATABASES['HOST']}:{DATABASES['PORT']}/{DATABASES['NAME']}"
         
         text_embeddings = embeddings.embed_documents(text_chunks)
         text_embedding_pairs = list(zip(text_chunks, text_embeddings))
-        db = PGVector.from_embeddings(text_embedding_pairs, embeddings,connection_string = connection_string)
+        # db = PGVector.from_embeddings(text_embedding_pairs, embeddings,connection_string = connection_string)
         
         
         # Get the default Django database connection
